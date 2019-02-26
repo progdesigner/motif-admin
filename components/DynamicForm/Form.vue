@@ -13,6 +13,26 @@
         :name="item.key"
         :disabled="disable(item)"></el-input>
 
+      <el-date-picker
+        v-if="visible(item, 'date')"
+        v-model="formData[item.key]"
+        type="date"
+        placeholder=""
+        suffix-icon="el-icon-date"
+        :format="item.format"
+        :name="item.key"
+        :disabled="disable(item)"></el-date-picker>
+
+      <el-date-picker
+        v-if="visible(item, 'datetime')"
+        v-model="formData[item.key]"
+        type="datetime"
+        placeholder=""
+        suffix-icon="el-icon-time"
+        :format="item.format"
+        :name="item.key"
+        :disabled="disable(item)"></el-date-picker>
+
       <el-radio-group
         v-if="visible(item, 'enum')"
         v-model="formData[item.key]"
@@ -26,6 +46,7 @@
 </template>
 
 <script>
+import { toDate } from 'element-ui/packages/date-picker/src/util'
 
 export default {
   props: [
@@ -39,28 +60,13 @@ export default {
       rules: []
     }
   },
-  created() {
-
-    let rules = {}
-    let defaultData = {}
-
-    for ( let index in this.fields ) {
-      let field = this.fields[index]
-      defaultData[field.key] = field.defaultValue
-      rules[field.key] = {
-        validator: function(rule, value, callback) {
-          if (field.optional === false && value === '') {
-            callback(new Error(`${field.label}${field.labelJoin} 필수 값입니다.`))
-          } else {
-            callback()
-          }
-        },
-        trigger: 'blur'
-      }
+  watch: {
+    fields(fields) {
+      this.initFields(fields)
     }
-
-    this.$data.rules = rules
-    this.$data.defaultData = defaultData
+  },
+  created() {
+    this.initFields(this.fields)
   },
   mounted() {
     if (this.mode === 'create') {
@@ -71,6 +77,41 @@ export default {
     }
   },
   methods: {
+    initFields( fields ) {
+      let rules = {}
+      let defaultData = {}
+
+      for ( let index in fields ) {
+        let field = fields[index]
+        defaultData[field.key] = this.defaultValue(field, field.defaultValue)
+        rules[field.key] = {
+          validator: (rule, value, handler) => {
+            if (field.optional !== true && value === '') {
+              handler(new Error(`${field.label}${field.labelJoin} 필수 값입니다.`))
+            } else {
+              this.$emit('validate', {
+                field,
+                callback: (error) => {
+                  handler(error)
+                }
+              })
+            }
+          },
+          trigger: 'blur'
+        }
+      }
+
+      this.$data.rules = rules
+      this.$data.defaultData = defaultData
+    },
+    defaultValue(field, value) {
+      if (field.type === 'date' || field.type === 'datetime') {
+        let date = toDate(value)
+        return date ? date : field.defaultValue
+      }
+
+      return value
+    },
 
     disable(item) {
       if (item.primaryKey) {
@@ -106,16 +147,25 @@ export default {
       }
     },
 
+    didUpdate(data) {
+      let formData = {}
+      for ( let index in this.fields ) {
+        let field = this.fields[index]
+        formData[field.key] = this.defaultValue(field, data[field.key])
+      }
+      this.$data.id = data._id
+      this.$data.formData = formData
+    },
+
     onLoad() {
 
       this.$emit("load", {
         callback:({error, data}) => {
           if (error) {
-            return;
+            return
           }
 
-          this.$data.id = data._id
-          this.$data.formData = data
+          this.didUpdate(data)
         }
       })
     },
@@ -127,11 +177,10 @@ export default {
         formData: this.$data.formData,
         callback: ({error, data}) => {
           if (error) {
-            return;
+            return
           }
 
-          this.$data.id = data._id
-          this.$data.formData = data
+          this.didUpdate(data)
         }
       })
     }

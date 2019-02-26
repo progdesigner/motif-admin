@@ -26,6 +26,8 @@
 
 <script>
 import _ from 'lodash'
+import { toDate } from 'element-ui/packages/date-picker/src/util'
+import dateUtil from 'element-ui/src/utils/date'
 
 export default {
   props: [
@@ -36,15 +38,29 @@ export default {
       listFields: []
     }
   },
+  watch: {
+    fields(fields) {
+      this.initFields(fields)
+    }
+  },
   created() {
-    this.$data.listFields = _.filter(this.fields, (field) => {
-      return field.listing
-    })
+    this.initFields(this.fields)
   },
   methods: {
+    initFields( fields ) {
+      let listFields = _.filter(fields, (field) => {
+        return field.listing
+      })
+
+      this.$data.listFields = listFields
+    },
     printValue(field, row) {
-      if (field.type === 'date') {
-        return this.$moment(row[field.key]).format(field.format)
+      if (field.type === 'date' || field.type === 'datetime') {
+        let date = toDate(row[field.key])
+        if (!date) {
+          return 'Invalid Date'
+        }
+        return dateUtil.format(date, field.format)
       }
 
       return row[field.key]
