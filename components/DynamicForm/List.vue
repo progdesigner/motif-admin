@@ -39,15 +39,16 @@ export default {
     }
   },
   watch: {
-    fields(fields) {
-      this.initFields(fields)
+    $route() {
+      this.initView()
     }
   },
   created() {
-    this.initFields(this.fields)
+    this.initView()
   },
   methods: {
-    initFields( fields ) {
+    initView() {
+      let fields = this.fields
       let listFields = _.filter(fields, (field) => {
         return field.listing
       })

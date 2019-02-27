@@ -61,12 +61,12 @@ export default {
     }
   },
   watch: {
-    fields(fields) {
-      this.initFields(fields)
+    $route() {
+      this.initView()
     }
   },
   created() {
-    this.initFields(this.fields)
+    this.initView()
   },
   mounted() {
     if (this.mode === 'create') {
@@ -77,7 +77,8 @@ export default {
     }
   },
   methods: {
-    initFields( fields ) {
+    initView() {
+      let fields = this.fields
       let rules = {}
       let defaultData = {}
 
@@ -104,6 +105,7 @@ export default {
       this.$data.rules = rules
       this.$data.defaultData = defaultData
     },
+    
     defaultValue(field, value) {
       if (field.type === 'date' || field.type === 'datetime') {
         let date = toDate(value)
