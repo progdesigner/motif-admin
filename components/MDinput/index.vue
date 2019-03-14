@@ -209,7 +209,7 @@ export default {
   $color-grey: #9E9E9E;
   $color-grey-light: #E0E0E0;
   $color-blue: #2196F3;
-  $color-red: #F44336;
+  $color-red: #cc3628;
   $color-black: black;
   // Base clases:
   %base-bar-pseudo {
@@ -241,7 +241,7 @@ export default {
         position: absolute;
         left: 0;
         line-height: $font-size-base;
-        color: $color-blue;
+        color: $color-red;
         top: $spacer;
         width: $index-has-icon;
         height: $font-size-base;
@@ -329,13 +329,13 @@ export default {
     .material-input-bar {
       &:before,
       &:after {
-        background: $color-blue;
+        background: $color-red;
       }
     }
     // Active state:
     &.material--active {
       .material-label {
-        color: $color-blue;
+        color: $color-red;
       }
     }
     // Errors:

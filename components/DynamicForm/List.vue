@@ -14,10 +14,10 @@
     <el-table-column label="Operations" align="center" width="120" >
       <template slot-scope="scope">
         <el-button type="primary" size="mini" class="btn-action" @click="onCommand('edit', scope)">
-          <i class="flaticon-edit" />
+          <svg-icon icon-class="pencil" />
         </el-button>
         <el-button type="danger" size="small" class="btn-action" @click="onCommand('delete', scope)">
-          <i class="flaticon-delete-1" />
+          <svg-icon icon-class="trash" />
         </el-button>
       </template>
     </el-table-column>

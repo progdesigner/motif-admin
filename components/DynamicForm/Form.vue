@@ -9,8 +9,12 @@
         v-if="visible(item, 'text')"
         v-model="formData[item.key]"
         placeholder=""
+        @blur="onBlur(item)"
+        @focus="onFocus(item)"
+        @change="onChange(item)"
         :type="item.secure ? 'password' : 'text'"
         :name="item.key"
+        :readonly="readonly(item)"
         :disabled="disable(item)"></el-input>
 
       <el-date-picker
@@ -19,8 +23,12 @@
         type="date"
         placeholder=""
         suffix-icon="el-icon-date"
+        @blur="onBlur(item)"
+        @focus="onFocus(item)"
+        @change="onChange(item)"
         :format="item.format"
         :name="item.key"
+        :readonly="readonly(item)"
         :disabled="disable(item)"></el-date-picker>
 
       <el-date-picker
@@ -29,24 +37,52 @@
         type="datetime"
         placeholder=""
         suffix-icon="el-icon-time"
+        @blur="onBlur(item)"
+        @focus="onFocus(item)"
+        @change="onChange(item)"
         :format="item.format"
         :name="item.key"
+        :readonly="readonly(item)"
         :disabled="disable(item)"></el-date-picker>
 
       <el-radio-group
         v-if="visible(item, 'enum')"
         v-model="formData[item.key]"
+        @change="onChange(item)"
         :name="item.key"
+        :readonly="readonly(item)"
         :disabled="disable(item)">
         <el-radio label="admin">Admin</el-radio>
         <el-radio label="manager">Manager</el-radio>
       </el-radio-group>
+
+      <el-select
+        v-if="visible(item, 'select')"
+        v-model="formData[item.key]"
+        placeholder="Select"
+        @blur="onBlur(item)"
+        @focus="onFocus(item)"
+        @change="onChange(item)"
+        :name="item.key"
+        :readonly="readonly(item)"
+        :disabled="disable(item)">
+        <el-option
+          v-for="option in item.options"
+          :key="option.value"
+          :label="option.label"
+          :value="option.value">
+        </el-option>
+      </el-select>
+
     </el-form-item>
   </el-form>
 </template>
 
 <script>
 import { toDate } from 'element-ui/packages/date-picker/src/util'
+
+let debugEnabled = 0
+let debug = debugEnabled ? console.log : function() {}
 
 export default {
   props: [
@@ -87,7 +123,7 @@ export default {
         defaultData[field.key] = this.defaultValue(field, field.defaultValue)
         rules[field.key] = {
           validator: (rule, value, handler) => {
-            if (field.optional !== true && value === '') {
+            if (field.editable !== false && field.optional !== true && value === '') {
               handler(new Error(`${field.label}${field.labelJoin} 필수 값입니다.`))
             } else {
               this.$emit('validate', {
@@ -104,8 +140,10 @@ export default {
 
       this.$data.rules = rules
       this.$data.defaultData = defaultData
+
+      this.willLoadFields()
     },
-    
+
     defaultValue(field, value) {
       if (field.type === 'date' || field.type === 'datetime') {
         let date = toDate(value)
@@ -113,6 +151,10 @@ export default {
       }
 
       return value
+    },
+
+    readonly(item) {
+      return item.editable === false ? true : false
     },
 
     disable(item) {
@@ -141,6 +183,11 @@ export default {
       return false
     },
 
+    selectOptions(item) {
+
+      return item.options || []
+    },
+
     resetFields() {
       this.$data.formData = Object.assign({}, this.$data.defaultData)
 
@@ -149,17 +196,32 @@ export default {
       }
     },
 
+    willLoadFields() {
+      debug('willLoadFields')
+
+      for ( let index in this.fields ) {
+        let field = this.fields[index]
+        if (field.type === 'select') {
+          this.onDataSource(field)
+        }
+      }
+    },
+
     didUpdate(data) {
+      debug('didUpdate', data)
+
       let formData = {}
       for ( let index in this.fields ) {
         let field = this.fields[index]
         formData[field.key] = this.defaultValue(field, data[field.key])
       }
+
       this.$data.id = data._id
       this.$data.formData = formData
     },
 
     onLoad() {
+      debug('onLoad')
 
       this.$emit("load", {
         callback:({error, data}) => {
@@ -172,7 +234,51 @@ export default {
       })
     },
 
+    onFocus(item) {
+      debug('onFocus', item)
+
+      this.$emit("focus", {
+        field: item,
+        formData: this.$data.formData
+      })
+    },
+
+    onBlur(item) {
+      debug('onBlur', item)
+
+      this.$emit("blur", {
+        field: item,
+        formData: this.$data.formData
+      })
+    },
+
+    onChange(item) {
+      debug('onChange', item)
+
+      this.$emit("change", {
+        field: item,
+        formData: this.$data.formData
+      })
+    },
+
+    onDataSource(item) {
+      debug('onDataSource', item)
+
+      this.$emit("source", {
+        field: item,
+        formData: this.$data.formData,
+        callback: ({error, data}) => {
+          if (error) {
+            return
+          }
+
+
+        }
+      })
+    },
+
     onSubmit(e) {
+      debug('onSubmit', e)
 
       this.$emit("submit", {
         mode: this.mode,
