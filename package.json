@@ -17,7 +17,7 @@
     "axios": "^0.18.0",
     "element-theme-dark": "^1.0.3",
     "element-theme-default": "^1.4.13",
-    "element-ui": "^2.5.4",
+    "element-ui": "^2.6.1",
     "moment": "^2.24.0",
     "normalize.css": "^8.0.1",
     "path-to-regexp": "^3.0.0",

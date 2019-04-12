@@ -6,8 +6,15 @@
       :label="field.label"
       :width="field.width"
       >
+
       <template slot-scope="scope">
-        {{printValue(field, scope.row)}}
+        <template v-if="field.displayType === 'image'">
+          <img :src="scope.row[field.key]" />
+        </template>
+
+        <template v-if="!field.displayType">
+          {{printValue(field, scope.row)}}
+        </template>
       </template>
     </el-table-column>
 
@@ -47,6 +54,7 @@ export default {
     this.initView()
   },
   methods: {
+
     initView() {
       let fields = this.fields
       let listFields = _.filter(fields, (field) => {
@@ -55,6 +63,7 @@ export default {
 
       this.$data.listFields = listFields
     },
+
     printValue(field, row) {
       if (field.type === 'date' || field.type === 'datetime') {
         let date = toDate(row[field.key])
@@ -68,8 +77,28 @@ export default {
     },
 
     onCommand(action, scope) {
+
+      if (action === 'delete') {
+        this.$confirm('삭제하시겠습니까?')
+          .then(_ => {
+            this.$emit("action", { action, data: scope.row })
+          })
+          .catch(_ => {
+
+          });
+        return
+      }
+
       this.$emit("action", { action, data: scope.row })
     }
   }
 }
 </script>
+
+<style>
+
+.dialog-container {
+  margin: 30px 50px;
+  position: relative;
+}
+</style>

@@ -3,6 +3,7 @@
     <div :class="{iconClass:icon}">
       <i v-if="icon" :class="['el-icon-' + icon]" class="el-input__icon material-input__icon"/>
       <input
+        ref="input"
         v-if="type === 'email'"
         :name="name"
         :placeholder="fillPlaceHolder"
@@ -13,10 +14,12 @@
         :required="required"
         type="email"
         class="material-input"
-        @focus="handleMdFocus"
-        @blur="handleMdBlur"
-        @input="handleModelInput">
+        @focus="onFocus"
+        @blur="onBlur"
+        @input="onInput"
+        @keyup="onKeyUp">
       <input
+        ref="input"
         v-if="type === 'url'"
         :name="name"
         :placeholder="fillPlaceHolder"
@@ -27,10 +30,12 @@
         :required="required"
         type="url"
         class="material-input"
-        @focus="handleMdFocus"
-        @blur="handleMdBlur"
-        @input="handleModelInput">
+        @focus="onFocus"
+        @blur="onBlur"
+        @input="onInput"
+        @keyup="onKeyUp">
       <input
+        ref="input"
         v-if="type === 'number'"
         :name="name"
         :placeholder="fillPlaceHolder"
@@ -46,10 +51,12 @@
         :required="required"
         type="number"
         class="material-input"
-        @focus="handleMdFocus"
-        @blur="handleMdBlur"
-        @input="handleModelInput">
+        @focus="onFocus"
+        @blur="onBlur"
+        @input="onInput"
+        @keyup="onKeyUp">
       <input
+        ref="input"
         v-if="type === 'password'"
         :name="name"
         :placeholder="fillPlaceHolder"
@@ -62,10 +69,12 @@
         :required="required"
         type="password"
         class="material-input"
-        @focus="handleMdFocus"
-        @blur="handleMdBlur"
-        @input="handleModelInput">
+        @focus="onFocus"
+        @blur="onBlur"
+        @input="onInput"
+        @keyup="onKeyUp">
       <input
+        ref="input"
         v-if="type === 'tel'"
         :name="name"
         :placeholder="fillPlaceHolder"
@@ -76,10 +85,12 @@
         :required="required"
         type="tel"
         class="material-input"
-        @focus="handleMdFocus"
-        @blur="handleMdBlur"
-        @input="handleModelInput">
+        @focus="onFocus"
+        @blur="onBlur"
+        @input="onInput"
+        @keyup="onKeyUp">
       <input
+        ref="input"
         v-if="type === 'text'"
         :name="name"
         :placeholder="fillPlaceHolder"
@@ -92,9 +103,10 @@
         :required="required"
         type="text"
         class="material-input"
-        @focus="handleMdFocus"
-        @blur="handleMdBlur"
-        @input="handleModelInput">
+        @focus="onFocus"
+        @blur="onBlur"
+        @input="onInput"
+        @keyup="onKeyUp">
       <span class="material-input-bar"/>
       <label class="material-label">
         <slot/>
@@ -141,16 +153,16 @@ export default {
   data() {
     return {
       currentValue: this.value,
-      focus: false,
+      focused: false,
       fillPlaceHolder: null
     }
   },
   computed: {
     computedClasses() {
       return {
-        'material--active': this.focus,
+        'material--active': this.focused,
         'material--disabled': this.disabled,
-        'material--raised': Boolean(this.focus || this.currentValue) // has value
+        'material--raised': Boolean(this.focused || this.currentValue) // has value
       }
     }
   },
@@ -160,7 +172,13 @@ export default {
     }
   },
   methods: {
-    handleModelInput(event) {
+    focus() {
+      this.$refs.input.focus()
+    },
+    blur() {
+      this.$refs.input.blur()
+    },
+    onInput(event) {
       const value = event.target.value
       this.$emit('input', value)
       if (this.$parent.$options.componentName === 'ElFormItem') {
@@ -170,15 +188,15 @@ export default {
       }
       this.$emit('change', value)
     },
-    handleMdFocus(event) {
-      this.focus = true
+    onFocus(event) {
+      this.focused = true
       this.$emit('focus', event)
       if (this.placeholder && this.placeholder !== '') {
         this.fillPlaceHolder = this.placeholder
       }
     },
-    handleMdBlur(event) {
-      this.focus = false
+    onBlur(event) {
+      this.focused = false
       this.$emit('blur', event)
       this.fillPlaceHolder = null
       if (this.$parent.$options.componentName === 'ElFormItem') {
@@ -186,6 +204,9 @@ export default {
           this.$parent.$emit('el.form.blur', [this.currentValue])
         }
       }
+    },
+    onKeyUp(event) {
+      this.$emit('keyup', event)
     }
   }
 }

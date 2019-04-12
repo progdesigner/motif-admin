@@ -79,14 +79,33 @@
 </template>
 
 <script>
+import _ from 'lodash'
 import { toDate } from 'element-ui/packages/date-picker/src/util'
 
-let debugEnabled = 0
+let debugEnabled = 1
 let debug = debugEnabled ? console.log : function() {}
+
+/*
+label: 필드 명칭
+key: 필드 키값
+type: 필드 타입
+primaryKey: 대표 키 여부
+options: select type 의 옵션 값 리스트
+listing: 리스트에 표시 여부 width: 리스트 fixed 너비
+format: 날짜 타입에 대한 포맷
+readonly: 읽기 전용, 설정한 경우
+ediable: 생성 폼에서만 작성 가능, 수정은 불가
+*/
 
 export default {
   props: [
-    "routerParams", "mode", "fields"
+    "routerParams", "mode", "fields",
+    {
+      validate: {
+        type: Function,
+        required: false
+      }
+    }
   ],
   data() {
     return {
@@ -113,6 +132,37 @@ export default {
     }
   },
   methods: {
+    getRule({ field }) {
+      let rules = []
+
+      if (field.primaryKey === true
+        || (field.optional !== true && field.readonly !== true && field.ediable !== false)) {
+
+        console.log( 'required' )
+        rules.push({ required: true, message: '값을 비워둘 수 없습니다.', trigger: 'blur' })
+      }
+
+      rules.push({
+        validator: (rule, value, handler) => {
+          if (typeof field.validate === 'function') {
+            handler(field.validate({
+              field: field
+            }))
+          }
+          else if (typeof this.$props.validate === 'function') {
+            handler(this.$props.validate({
+              field: field
+            }))
+          }
+          else {
+            handler()
+          }
+        },
+        trigger: 'blur'
+      })
+
+      return rules
+    },
     initView() {
       let fields = this.fields
       let rules = {}
@@ -121,21 +171,7 @@ export default {
       for ( let index in fields ) {
         let field = fields[index]
         defaultData[field.key] = this.defaultValue(field, field.defaultValue)
-        rules[field.key] = {
-          validator: (rule, value, handler) => {
-            if (field.editable !== false && field.optional !== true && value === '') {
-              handler(new Error(`${field.label}${field.labelJoin} 필수 값입니다.`))
-            } else {
-              this.$emit('validate', {
-                field,
-                callback: (error) => {
-                  handler(error)
-                }
-              })
-            }
-          },
-          trigger: 'blur'
-        }
+        rules[field.key] = this.getRule({ field })
       }
 
       this.$data.rules = rules
@@ -149,12 +185,23 @@ export default {
         let date = toDate(value)
         return date ? date : field.defaultValue
       }
+      else if (field.type === 'select') {
+        if (field.options && field.options.length > 0) {
+          let selectedOption = null
+          _.forEach(field.options, option => {
+            if (option.value === value || (typeof value === 'number' && parseInt(option.value) === value) ) {
+              selectedOption = option
+            }
+          })
+          return selectedOption ? selectedOption.label : value
+        }
+      }
 
       return value
     },
 
     readonly(item) {
-      return item.editable === false ? true : false
+      return (this.mode !== 'create' && item.editable === false) || item.readonly === true ? true : false
     },
 
     disable(item) {
@@ -175,6 +222,10 @@ export default {
           if (this.mode === 'create') {
             return false
           }
+        }
+
+        if (item.readonly === true) {
+          return this.mode !== 'create'
         }
 
         return true
@@ -271,14 +322,19 @@ export default {
           if (error) {
             return
           }
-
-
         }
       })
+
+      if (typeof item.dataSource === 'function') {
+        item.dataSource({
+          field: item,
+          formData: this.$data.formData
+        })
+      }
     },
 
-    onSubmit(e) {
-      debug('onSubmit', e)
+    onSubmit() {
+      debug('onSubmit')
 
       this.$emit("submit", {
         mode: this.mode,
@@ -290,6 +346,19 @@ export default {
 
           this.didUpdate(data)
         }
+      })
+    },
+
+    submit() {
+      debug('submit')
+
+      this.$refs.form.validate(valid => {
+        if (!valid) {
+          return false
+        }
+
+        this.onSubmit()
+        return true
       })
     }
   }
