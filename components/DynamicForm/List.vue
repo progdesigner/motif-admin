@@ -19,8 +19,8 @@
     </el-table-column>
 
     <el-table-column label="Operations" align="center" :width="actionWidth" >
-      <template slot-scope="scope" v-for="(action, index) in actions">
-        <el-button :type="action.type" :size="action.size" class="btn-action" @click="onCommand(action.action, scope)">
+      <template slot-scope="scope">
+        <el-button v-for="(action, index) in actions" :type="action.type" :size="action.size" class="btn-action" @click="onCommand(action.action, scope)">
           <svg-icon :icon-class="action.icon" />
         </el-button>
       </template>

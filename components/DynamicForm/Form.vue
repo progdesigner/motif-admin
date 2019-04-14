@@ -74,7 +74,36 @@
         </el-option>
       </el-select>
 
+      <el-upload
+        v-if="visible(item, 'file')"
+        drag
+        :multiple="false"
+        :show-file-list="true"
+        :on-preview="(file) => onFilePreview(item, file)"
+        :on-remove="(file, fileList) => onFileRemove(item, file, fileList)"
+        :on-success="(response, file, fileList) => onFileUpload(item, response, file, fileList)"
+        :headers="item.headers()"
+        :data="item.data(formData)"
+        :action="item.action"
+        :file-list="item.fileList || []"
+        limit="1"
+        class="uploader"
+        >
+        <div class="upload-before" >
+          <div class="el-upload__text">
+            <i class="el-icon-upload"></i>
+            <span>Drop file here or <em>click to upload</em></span>
+          </div>
+
+          <!-- <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div> -->
+        </div>
+      </el-upload>
+
     </el-form-item>
+
+    <el-dialog :visible.sync="preview.visible">
+      <img width="100%" :src="preview.url" alt="" />
+    </el-dialog>
   </el-form>
 </template>
 
@@ -112,7 +141,11 @@ export default {
       id: this.routerParams.id || '',
       defaultData: {},
       formData: {},
-      rules: []
+      rules: [],
+      preview: {
+        visible: false,
+        url: ''
+      }
     }
   },
   watch: {
@@ -269,6 +302,22 @@ export default {
 
       this.$data.id = data._id
       this.$data.formData = formData
+
+      for ( let index in this.fields ) {
+        let field = this.fields[index]
+        if (field.type === 'file') {
+          let url = this.$data.formData[field.key]
+
+          if (url) {
+            field.fileList = [
+              { name: 'file', url }
+            ]
+          }
+          else {
+            field.fileList = []
+          }
+        }
+      }
     },
 
     onLoad() {
@@ -310,6 +359,45 @@ export default {
         field: item,
         formData: this.$data.formData
       })
+    },
+
+    onFilePreview(item, file) {
+      debug('onFilePreview', item, file)
+
+      this.$data.preview.url = file.url
+      this.$data.preview.visible = true
+    },
+
+    onFileRemove(item, file, fileList) {
+      debug('onFileRemove', item, file, fileList)
+
+      this.$data.formData[item.key] = ''
+
+      this.$emit("change", {
+        field: item,
+        formData: this.$data.formData
+      })
+    },
+
+    onFileUpload(item, response, file, fileList) {
+      debug('onFileUpload', item, response, file, fileList)
+
+      let { data, error } = response
+
+      if (error) {
+        return
+      }
+
+      let { resources } = data
+      let resource = _.head(resources)
+      if (resource && resource.resource_url) {
+        this.$data.formData[item.key] = resource.resource_url
+
+        this.$emit("change", {
+          field: item,
+          formData: this.$data.formData
+        })
+      }
     },
 
     onDataSource(item) {
@@ -364,3 +452,45 @@ export default {
   }
 }
 </script>
+
+<style lang="scss">
+
+.uploader {
+
+  width: 100%;
+  line-height: 1.2;
+
+  .el-upload.el-upload--text {
+    width: 100%;
+  }
+
+  .el-upload-dragger {
+    width: auto; height: auto;
+    padding: 0.4rem;
+
+    .el-upload__text {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+
+      .el-icon-upload {
+        line-height: 1;
+        margin: 0 0.8rem;
+        font-size: 3.2em;
+      }
+    }
+  }
+
+  .el-upload-list {
+    margin-top: 0.2rem;
+
+    .el-upload-list__item {
+      animation: none !important;
+      transition: none !important;
+      margin: 0;
+    }
+  }
+}
+
+</style>
