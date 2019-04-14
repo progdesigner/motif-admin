@@ -11,8 +11,14 @@
       <legend class="col-form-label">{{field.label || field.name}}</legend>
 
       <div class="resource" v-if="typeof resources[field.name] == 'object'" v-for="(resource, index) in [resources[field.name]]">
-        <div class="image" v-if="resource && resource.resource_url" >
-          <img :src="resource.resource_url" alt="Resource Image" @click="onFilePreview(field, resource)" />
+        <div class="resource-content" v-if="resource && resource.resource_url" >
+          <img
+            v-if="resource.resource_type === 'image'"
+            alt="Resource"
+            :src="resource.resource_url"
+            @click="onFilePreview(field, resource)" />
+
+          <span v-if="resource.resource_type !== 'image'" ><a :href="resource.resource_url" target="_blank">{{resource.filename}}</a></span>
         </div>
 
         <!-- <div class="info" v-if="resource && resource.id" >
@@ -41,7 +47,7 @@
           :data="uploadData(field)"
           :action="action"
           :on-success="(response, file, fileList) => onFileUpload(field, response, file, fileList)">
-          <el-button slot="trigger" size="small" type="primary">Upload</el-button>
+          <el-button slot="trigger" size="small" type="primary"><svg-icon icon-class="plus" /></el-button>
           <!-- <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div> -->
         </el-upload>
       </div>
@@ -50,8 +56,14 @@
     <template v-if="field.type == 'list'">
       <legend class="col-form-label">{{field.label || field.name}}</legend>
       <div class="resource" v-for="(resource, index) in resources[field.name]">
-        <div class="image" v-if="resource && resource.resource_url" >
-          <img :src="resource.resource_url" alt="Resource Image" @click="onFilePreview(field, resource)" />
+        <div class="resource-content" v-if="resource && resource.resource_url" >
+          <img
+            v-if="resource.resource_type === 'image'"
+            alt="Resource"
+            :src="resource.resource_url"
+            @click="onFilePreview(field, resource)" />
+
+          <span v-if="resource.resource_type !== 'image'" ><a :href="resource.resource_url" target="_blank">{{resource.filename}}</a></span>
         </div>
 
         <!-- <div class="info" v-if="resource && resource.id" >
@@ -79,7 +91,7 @@
         :data="uploadData(field)"
         :action="action"
         :on-success="(response, file, fileList) => onFileUpload(field, response, file, fileList)">
-        <el-button slot="trigger" size="small" type="primary">Upload</el-button>
+        <el-button slot="trigger" size="small" type="primary"><svg-icon icon-class="plus" /></el-button>
         <!-- <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div> -->
       </el-upload>
     </template>
@@ -110,9 +122,7 @@ export default {
     resourceKey: {
       type: String,
       required: true,
-      default: () => {
-        return uuid().replace(/-/g, "")
-      }
+      default: ''
     },
     resourceFields: {
       type: Array,
@@ -144,6 +154,7 @@ export default {
       }
     }
   },
+
   methods: {
     uploadHeaders() {
       let headers = {}
@@ -245,15 +256,24 @@ export default {
     }
   }
 
+  legend {
+    font-weight: bold;
+  }
+
   .resource {
     display: flex;
     flex-direction: row;
     margin-bottom: 0.8em;
     position: relative;
 
-    img {
+    .resource-content {
       max-width: 300px;
       height: inherit !important;
+
+      img {
+        width: 100%;
+        height: inherit !important;
+      }
     }
 
     .info {
@@ -284,10 +304,6 @@ export default {
       position: absolute;
       right: 0;
       top: 0;
-
-      .image {
-        display: block;
-      }
     }
   }
 }
