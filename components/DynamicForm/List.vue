@@ -18,13 +18,10 @@
       </template>
     </el-table-column>
 
-    <el-table-column label="Operations" align="center" width="120" >
-      <template slot-scope="scope">
-        <el-button type="primary" size="mini" class="btn-action" @click="onCommand('edit', scope)">
-          <svg-icon icon-class="pencil" />
-        </el-button>
-        <el-button type="danger" size="small" class="btn-action" @click="onCommand('delete', scope)">
-          <svg-icon icon-class="trash" />
+    <el-table-column label="Operations" align="center" :width="actionWidth" >
+      <template slot-scope="scope" v-for="(action, index) in actions">
+        <el-button :type="action.type" :size="action.size" class="btn-action" @click="onCommand(action.action, scope)">
+          <svg-icon :icon-class="action.icon" />
         </el-button>
       </template>
     </el-table-column>
@@ -38,11 +35,28 @@ import dateUtil from 'element-ui/src/utils/date'
 
 export default {
   props: [
-    "fields", "items"
+    "fields": {
+      type: Array,
+      default: [],
+      required: true
+    },
+    "items": {
+      type: Array,
+      default: [],
+      required: true
+    },
+    "actions": {
+      type: Array,
+      default: [
+        { type: 'primary', size: 'mini', action: 'edit', icon: 'pencil' },
+        { type: 'danger', size: 'small', action: 'delete', icon: 'trash' }
+      ]
+    }
   ],
   data() {
     return {
-      listFields: []
+      listFields: [],
+      actionWidth: 120
     }
   },
   watch: {
