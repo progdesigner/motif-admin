@@ -1,5 +1,5 @@
 {
-  "version": "0.1.10",
+  "version": "0.1.11",
   "name": "@motif/admin",
   "author": {
     "email": "me@progdesigner.com",
@@ -30,6 +30,7 @@
     "@babel/polyfill": "^7.2.5",
     "@vue/cli-plugin-babel": "^3.4.1",
     "sass-loader": "^7.1.0",
+    "svgo": "^1.2.1",
     "vue-template-compiler": "^2.6.7"
   },
   "postcss": {
