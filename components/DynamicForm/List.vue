@@ -34,7 +34,7 @@ import { toDate } from 'element-ui/packages/date-picker/src/util'
 import dateUtil from 'element-ui/src/utils/date'
 
 export default {
-  props: [
+  props: {
     "fields": {
       type: Array,
       default: [],
@@ -52,7 +52,7 @@ export default {
         { type: 'danger', size: 'small', action: 'delete', icon: 'trash' }
       ]
     }
-  ],
+  },
   data() {
     return {
       listFields: [],
