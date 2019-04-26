@@ -97,7 +97,7 @@
     </template>
   </el-form>
 
-  <el-dialog :visible.sync="preview.visible">
+  <el-dialog :visible.sync="preview.visible" append-to-body>
     <img width="100%" :src="preview.url" alt="" />
   </el-dialog>
 
