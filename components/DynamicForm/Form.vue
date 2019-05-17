@@ -11,7 +11,7 @@
         placeholder=""
         @blur="onBlur(item)"
         @focus="onFocus(item)"
-        @change="onChange(item)"
+        @change="onChange(item, $event)"
         :type="item.secure ? 'password' : 'text'"
         :name="item.key"
         :readonly="readonly(item)"
@@ -25,7 +25,7 @@
         suffix-icon="el-icon-date"
         @blur="onBlur(item)"
         @focus="onFocus(item)"
-        @change="onChange(item)"
+        @change="onChange(item, $event)"
         :format="item.format"
         :name="item.key"
         :readonly="readonly(item)"
@@ -39,7 +39,7 @@
         suffix-icon="el-icon-time"
         @blur="onBlur(item)"
         @focus="onFocus(item)"
-        @change="onChange(item)"
+        @change="onChange(item, $event)"
         :format="item.format"
         :name="item.key"
         :readonly="readonly(item)"
@@ -48,7 +48,7 @@
       <el-radio-group
         v-if="visible(item, 'enum')"
         v-model="formData[item.key]"
-        @change="onChange(item)"
+        @change="onChange(item, $event)"
         :name="item.key"
         :readonly="readonly(item)"
         :disabled="disable(item)">
@@ -62,7 +62,7 @@
         placeholder="Select"
         @blur="onBlur(item)"
         @focus="onFocus(item)"
-        @change="onChange(item)"
+        @change="onChange(item, $event)"
         :name="item.key"
         :readonly="readonly(item)"
         :disabled="disable(item)">
@@ -99,6 +99,16 @@
         </div>
       </el-upload>
 
+      <resources
+        v-if="visible(item, 'resources')"
+        v-model="formData[item.key]"
+        @change="onChange(item, $event)"
+        :useDebug="item.useDebug"
+        :action="item.action"
+        :resource-key="getResourceKey(formData)"
+        :resource-fields="item.resourceFields">
+      </resources>
+
     </el-form-item>
 
     <el-dialog :visible.sync="preview.visible">
@@ -109,6 +119,8 @@
 
 <script>
 import _ from 'lodash'
+import uuid from 'uuid'
+import Resources from '../Resources'
 import { toDate } from 'element-ui/packages/date-picker/src/util'
 
 let debugEnabled = 1
@@ -127,6 +139,9 @@ ediable: 생성 폼에서만 작성 가능, 수정은 불가
 */
 
 export default {
+  components: {
+    Resources
+  },
   props: [
     "routerParams", "mode", "fields",
     {
@@ -171,7 +186,7 @@ export default {
       if (field.primaryKey === true
         || (field.optional !== true && field.readonly !== true && field.ediable !== false)) {
 
-        console.log( 'required' )
+        debug( 'required' )
         rules.push({ required: true, message: '값을 비워둘 수 없습니다.', trigger: 'blur' })
       }
 
@@ -197,6 +212,8 @@ export default {
       return rules
     },
     initView() {
+      debug("initView")
+
       let fields = this.fields
       let rules = {}
       let defaultData = {}
@@ -226,7 +243,7 @@ export default {
               selectedOption = option
             }
           })
-          return selectedOption ? selectedOption.label : value
+          return selectedOption ? selectedOption.value : value
         }
       }
 
@@ -305,6 +322,7 @@ export default {
 
       for ( let index in this.fields ) {
         let field = this.fields[index]
+
         if (field.type === 'file') {
           let url = this.$data.formData[field.key]
 
@@ -352,13 +370,40 @@ export default {
       })
     },
 
-    onChange(item) {
-      debug('onChange', item)
+    onChange(item, originalEvent) {
+      debug('onChange', item, originalEvent)
 
-      this.$emit("change", {
+      var eventData = {
         field: item,
-        formData: this.$data.formData
-      })
+        formData: this.$data.formData,
+        originalEvent: originalEvent || {}
+      }
+
+      try {
+        if (item.type === 'resources') {
+          let { field, action, resource, data } = originalEvent
+
+          if (field && field.sync) {
+            let fieldKey = field.sync
+            if (action === 'remove') {
+              this.$data.formData[fieldKey] = ''
+            }
+            else if (action === 'upload') {
+              if (field.type === 'single') {
+                let resource = _.head(data.resources)
+                if (resource && resource.resource_url) {
+                  this.$data.formData[fieldKey] = resource.resource_url
+                }
+              }
+            }
+          }
+        }
+      }
+      catch(e) {}
+
+      debug( "eventData", eventData )
+
+      this.$emit("change", eventData)
     },
 
     onFilePreview(item, file) {
@@ -372,6 +417,8 @@ export default {
       debug('onFileRemove', item, file, fileList)
 
       this.$data.formData[item.key] = ''
+
+      item.fileList = fileList
 
       this.$emit("change", {
         field: item,
@@ -393,11 +440,34 @@ export default {
       if (resource && resource.resource_url) {
         this.$data.formData[item.key] = resource.resource_url
 
+        file.url = resource.resource_url
+
+        item.fileList = fileList
+
         this.$emit("change", {
           field: item,
           formData: this.$data.formData
         })
       }
+    },
+
+    getResourceKey(data = {}) {
+      if (data && !data.resource_key) {
+        let resourceKey = uuid().replace(/-/g, '')
+        data.resource_key = resourceKey
+        return resourceKey
+      }
+
+      return data.resource_key
+    },
+
+    onResourceUpload(item, resource, resources) {
+      debug('onResourceUpload', item, resource, resources)
+
+      this.$emit("change", {
+        field: item,
+        formData: this.$data.formData
+      })
     },
 
     onDataSource(item) {
@@ -410,6 +480,8 @@ export default {
           if (error) {
             return
           }
+
+
         }
       })
 

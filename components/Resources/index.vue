@@ -1,8 +1,8 @@
 
 <template>
 <div class="resources">
-  <div class="debug">
-    <pre v-if="debug">{{resources}}</pre>
+  <div class="debug" v-if="useDebug">
+    <pre v-if="showDebug">{{resources}}</pre>
     <el-button type="link" @click="onToggleDebug">DEBUG</el-button>
   </div>
 
@@ -108,6 +108,9 @@
 import _ from "lodash"
 import uuid from "uuid"
 
+let debugEnabled = 1
+let debug = debugEnabled ? console.log : function() {}
+
 export default {
   props: {
     action: {
@@ -128,6 +131,11 @@ export default {
       type: Array,
       required: true
     },
+    useDebug: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
     readonly: {
       type: Boolean,
       required: false,
@@ -136,7 +144,7 @@ export default {
   },
   data() {
     return {
-      debug: false,
+      showDebug: false,
       resources: {},
       preview: {
         visible: false,
@@ -154,7 +162,12 @@ export default {
       }
     }
   },
-
+  created() {
+    debug( "created", this.$data )
+  },
+  mounted() {
+    debug( "mounted", this.$props )
+  },
   methods: {
     uploadHeaders() {
       let headers = {}
@@ -172,18 +185,18 @@ export default {
     },
 
     onToggleDebug() {
-      this.$data.debug = !this.$data.debug
+      this.$data.showDebug = !this.$data.showDebug
     },
 
     onFilePreview(field, resource) {
-      console.log( 'onFilePreview', field, resource)
+      debug( 'onFilePreview', field, resource)
 
       this.$data.preview.url = resource.resource_url
       this.$data.preview.visible = true
     },
 
     onFileUpload(field, response, file, fileList) {
-      console.log( 'onFileUpload', field, response, file, fileList)
+      debug( 'onFileUpload', field, response, file, fileList)
 
       let { data, error } = response
 
@@ -194,7 +207,13 @@ export default {
 
       if (field.type === 'single') {
         this.$data.resources[field.name] = _.head(data.resources)
-        this.didChange()
+        this.didChange({
+          action: "upload",
+          type: "single",
+          data: data,
+          field: field,
+          resources: this.$data.resources
+        })
       }
       else if (field.type === "list") {
         let resourceData = this.$data.resources[field.name] || []
@@ -205,19 +224,31 @@ export default {
         }
 
         this.$data.resources[field.name] = resourceData
-        this.didChange()
+        this.didChange({
+          action: "upload",
+          type: "list",
+          data: data,
+          field: field,
+          resources: this.$data.resources
+        })
       }
     },
 
     onFileRemove(field, resource) {
-      console.log( 'onFileRemove', field, resource)
+      debug( 'onFileRemove', field, resource)
 
       let resourceData = this.$data.resources[field.name]
 
       if (field.type === 'single') {
         this.$data.resources[field.name] = null
         delete this.$data.resources[field.name]
-        this.didChange()
+        this.didChange({
+          action: "remove",
+          type: "single",
+          field: field,
+          resource: resource,
+          resources: this.$data.resources
+        })
       }
       else if (field.type === "list") {
         let newResources = []
@@ -229,13 +260,20 @@ export default {
         }
 
         this.$data.resources[field.name] = newResources
-        this.didChange()
+        this.didChange({
+          action: "remove",
+          type: "list",
+          field: field,
+          resource: resource,
+          resources: this.$data.resources
+        })
       }
     },
 
-    didChange() {
+    didChange(event) {
 
       this.$emit('input', JSON.stringify(this.$data.resources))
+      this.$emit('change', event)
     }
   }
 }
